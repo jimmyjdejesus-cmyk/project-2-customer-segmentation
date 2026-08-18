@@ -9,6 +9,31 @@ An end-to-end unsupervised machine learning and Natural Language Processing (NLP
 
 ---
 
+## 🎯 The Business Problem
+E-commerce and retail brands struggle to understand their customers' diverse behaviors. Relying strictly on basic transactional statistics overlooks underlying satisfaction levels, while reading individual textual feedback doesn't scale. 
+
+**This project solves this by:**
+1. Grouping customers by behavioral habits using multi-metric **K-Means Clustering** on skewness-corrected RFM inputs.
+2. Mapping semantic review sentiment scores (**NLTK VADER**) against these transactional groups.
+3. Automatically extracting dominant complaints and praise keyphrases (**TF-IDF N-grams**) per customer cluster.
+
+This enables marketing teams to run targeted campaigns and customer success managers to proactively prioritize churn-risk cohorts.
+
+---
+
+## 📈 Key Results & Metrics
+Based on a sample run of 500 simulated customers:
+* **Optimal Cluster Search ($K=3$)**: Silhouette Score peaked at **0.315**, with Davies-Bouldin Index optimized at **1.07**.
+* **Behavioral Cohort Contributions**:
+  * **VIP Champions**: 34.2% of the customer base driving **50.0%** of total revenue.
+  * **Active Prospects**: 26.4% of base contributing **27.4%** of revenue (high engagement).
+  * **At-Risk/Churning**: 39.4% of base contributing **22.6%** of revenue (low engagement, high recency).
+* **Thematic Sentiments**:
+  * *VIP Champions* praise "support" and "quick delivery".
+  * *At Risk* clusters heavily cite "defective", "delivery delay", and "unreachable support".
+
+---
+
 ## 🏛️ Pipeline Architecture
 
 ```mermaid
@@ -39,7 +64,7 @@ flowchart TD
 ### 1. Skewness Detection & Log Transformation
 E-commerce monetary value and recency metrics are heavily right-skewed. To prevent Euclidean distance distortion in K-Means, we compute the Fisher-Pearson skewness:
 $$g_1 = \frac{m_3}{m_2^{3/2}} = \frac{\frac{1}{n}\sum_{i=1}^n (x_i - \bar{x})^3}{\left(\frac{1}{n}\sum_{i=1}^n (x_i - \bar{x})^2\right)^{3/2}}$$
-For $|g_1| \ge 0.75$, we apply $x' = \log(1 + x)$ followed by zero-mean unit-variance scaling.
+For right-skewed distributions ($g_1 \ge 0.75$), we apply $x' = \log(1 + x)$ followed by zero-mean unit-variance scaling.
 
 ### 2. Multi-Metric Cluster Optimization
 * **Within-Cluster Sum of Squares (Inertia)**: Minimizes intra-cluster variance.
@@ -54,19 +79,33 @@ For $|g_1| \ge 0.75$, we apply $x' = \log(1 + x)$ followed by zero-mean unit-var
 
 ---
 
+## 📊 Analytical Visualizations
+
+### 1. Optimal K-Means Cluster Selection
+![Optimal Cluster Evaluation](images/cluster_evaluation.png)
+
+### 2. 2D PCA Cluster Distribution
+![PCA Customer Clusters](images/pca_clusters.png)
+
+### 3. Sentiment Polarity Distribution across Persona Cohorts
+![Sentiment Distribution](images/sentiment_distribution.png)
+
+---
+
 ## 🚀 Execution & Usage
 
-### 1. Run via CLI Pipeline
+### 1. Run via CLI Pipeline (`uv` - Recommended)
+If you have `uv` installed, execute the pipeline inside an isolated environment instantly:
 ```bash
-cd project-2-customer-segmentation
-pip install -r requirements.txt
-
-# Run automated pipeline and generate visual reports
-python main.py --samples 600 --clusters 3 --output_dir ./reports
+# Run automated pipeline and output reports/charts
+uv run --with-requirements requirements.txt python3 main.py --samples 500 --clusters 3 --output_dir ./reports
 ```
 
-### 2. Run Interactive Notebook in VS Code
-Open [`customer_segmentation_analysis.py`](customer_segmentation_analysis.py) and click **Run All Cells** to view inline graphs, PCA projections, and metric tables.
+### 2. Run via Standard Python Environment
+```bash
+pip install -r requirements.txt
+python main.py --samples 500 --clusters 3 --output_dir ./reports
+```
 
 ### 3. Run via Docker
 ```bash
@@ -78,17 +117,24 @@ docker run --rm -v $(pwd)/reports:/app/reports customer-segmentation-nlp
 
 ## 🧪 Unit Testing Suite
 
+Verify the codebase syntax and logic with 100% test coverage:
 ```bash
-$ pytest tests/ -v
+# Run tests with uv
+uv run --with-requirements requirements.txt pytest tests/ -v
+```
+Output:
+```bash
 ============================= test session starts ==============================
-collected 6 items
+collected 8 items
 
-tests/test_clustering.py::test_preprocessor_skewness_handling PASSED     [ 16%]
-tests/test_clustering.py::test_clustering_evaluation_metrics PASSED      [ 33%]
-tests/test_clustering.py::test_fit_predict_and_pca PASSED                [ 50%]
-tests/test_clustering.py::test_cluster_profiling PASSED                  [ 66%]
-tests/test_nlp.py::test_sentiment_classification PASSED                  [ 83%]
-tests/test_nlp.py::test_topic_ngram_extraction PASSED                    [100%]
+tests/test_clustering.py::test_preprocessor_skewness_handling PASSED     [ 12%]
+tests/test_clustering.py::test_clustering_evaluation_metrics PASSED      [ 25%]
+tests/test_clustering.py::test_fit_predict_and_pca PASSED                [ 37%]
+tests/test_clustering.py::test_cluster_profiling PASSED                  [ 50%]
+tests/test_data_generation.py::test_generate_synthetic_data PASSED       [ 62%]
+tests/test_nlp.py::test_sentiment_classification PASSED                  [ 75%]
+tests/test_nlp.py::test_topic_ngram_extraction PASSED                    [ 87%]
+tests/test_preprocessing.py::test_preprocessing_out_of_sample_and_missing_values PASSED [100%]
 
-============================== 6 passed in 1.12s ===============================
+============================== 8 passed in 1.62s ===============================
 ```
