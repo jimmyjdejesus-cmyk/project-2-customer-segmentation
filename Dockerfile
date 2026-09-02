@@ -12,8 +12,8 @@ ENV PYTHONUNBUFFERED=1
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download NLTK data
-RUN python -m nltk.downloader vader_lexicon
+# Download required NLTK corpora for VADER sentiment analysis and TF-IDF text processing
+RUN python -m nltk.downloader vader_lexicon stopwords punkt punkt_tab
 
 # Copy source code
 COPY . .
